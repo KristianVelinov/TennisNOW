@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from .models import Reservation
-from . import db
 from datetime import datetime
+from . import db
+from .models import Reservation
 
 reservations_bp = Blueprint('reservations', __name__, url_prefix='/reservations')
 
@@ -17,6 +17,29 @@ def get_reservations():
             "end_time": reservation.end_time.isoformat()
         })
     return jsonify(result), 200
+
+@reservations_bp.route("/court/<int:court_number>/<string:date>", methods=["GET"])
+def get_specific_reservation(court_number, date): # will be used by frontend to filter reservation booking (once i make the frontend(which might never even materialize))
+    try:
+        day_start = datetime.fromisoformat(date + "T00:00:00")
+        day_end = datetime.fromisoformat(date + "T23:59:59")
+
+        reservations = Reservation.query.filter(
+            Reservation.court_number == court_number,
+            Reservation.start_time >= day_start,
+            Reservation.start_time <= day_end
+        ).all()
+
+        result = [{
+            "id": reservation.id,
+            "start_time": reservation.start_time.isoformat(),
+            "end_time": reservation.end_time.isoformat()
+        } for reservation in reservations]
+
+        return jsonify(result), 200
+
+    except Exception as error:
+        return jsonify({"error": str(error)}), 400
 
 @reservations_bp.route("/book", methods=["POST"])
 def create_reservation():
@@ -54,21 +77,21 @@ def create_reservation():
         return jsonify({"error": str(e)}), 400
 
 
-@reservations_bp.route("/deletereservation/<int:reservation_id>", methods=["DELETE"])
+@reservations_bp.route("/delete/<int:reservation_id>", methods=["DELETE"])
 def delete_reservation(reservation_id):
     reservation = Reservation.query.get(reservation_id)
     if not reservation:
         return jsonify({"message": "Reservation not found"}), 404
     
     time_now = datetime.now()
-    if (reservation.start_time - time_now).total_seconds() < 60*60*2:
+    if (((reservation.start_time - time_now).total_seconds() < 60*60*2) and (reservation.end_time - time_now).total_seconds() > 0):
         return jsonify({"message": "Cannot delete reservation less than 2 hours before start time"}), 403
     
     db.session.delete(reservation)
     db.session.commit()
     return jsonify({"message": "Reservation deleted"}), 200
 
-@reservations_bp.route("/updatereservation/<int:reservation_id>", methods=["PATCH"])
+@reservations_bp.route("/update/<int:reservation_id>", methods=["PATCH"])
 def update_reservation(reservation_id):
     reservation = Reservation.query.get(reservation_id)
     if not reservation:
