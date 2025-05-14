@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from . import db
-from .models import Reservation
+from .models import Reservation, User
+from app.utils.auth_decorators import token_required
 
 reservations_bp = Blueprint('reservations', __name__, url_prefix='/reservations')
 
@@ -14,7 +15,8 @@ def get_reservations():
             "id": reservation.id,
             "court_number": reservation.court_number,
             "start_time": reservation.start_time.isoformat(),
-            "end_time": reservation.end_time.isoformat()
+            "end_time": reservation.end_time.isoformat(),
+            "user_id": reservation.user_id
         })
     return jsonify(result), 200
 
@@ -33,7 +35,8 @@ def get_specific_reservation(court_number, date): # will be used by frontend to 
         result = [{
             "id": reservation.id,
             "start_time": reservation.start_time.isoformat(),
-            "end_time": reservation.end_time.isoformat()
+            "end_time": reservation.end_time.isoformat(),
+            "user_id": reservation.user_id
         } for reservation in reservations]
 
         return jsonify(result), 200
@@ -42,7 +45,8 @@ def get_specific_reservation(court_number, date): # will be used by frontend to 
         return jsonify({"error": str(error)}), 400
 
 @reservations_bp.route("/book", methods=["POST"])
-def create_reservation():
+@token_required
+def create_reservation(current_user):
     data = request.get_json()
     try:
         court_number = data["court_number"]
@@ -59,6 +63,7 @@ def create_reservation():
             return jsonify({"message": "Time slot conflicts with an existing reservation."}), 409
 
         new_reservation = Reservation(
+            user_id=current_user.id,
             court_number=court_number,
             start_time=start_time,
             end_time=end_time
@@ -70,19 +75,28 @@ def create_reservation():
             "id": new_reservation.id,
             "court_number": new_reservation.court_number,
             "start_time": new_reservation.start_time.isoformat(),
-            "end_time": new_reservation.end_time.isoformat()
+            "end_time": new_reservation.end_time.isoformat(),
+            "user_id": new_reservation.user_id
         }), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-
 @reservations_bp.route("/delete/<int:reservation_id>", methods=["DELETE"])
 def delete_reservation(reservation_id):
+    data = request.get_json()
+
+    user = User.query.get(data["user_id"])
+    if not user:
+        return jsonify({"message": "Unauthorized."}), 401
+    
     reservation = Reservation.query.get(reservation_id)
     if not reservation:
         return jsonify({"message": "Reservation not found"}), 404
-    
+
+    if reservation.user_id != user.id:
+        return jsonify({"message": "You don't own this reservation."}), 403
+
     time_now = datetime.now()
     if (((reservation.start_time - time_now).total_seconds() < 60*60*2) and (reservation.end_time - time_now).total_seconds() > 0):
         return jsonify({"message": "Cannot delete reservation less than 2 hours before start time"}), 403
@@ -93,15 +107,22 @@ def delete_reservation(reservation_id):
 
 @reservations_bp.route("/update/<int:reservation_id>", methods=["PATCH"])
 def update_reservation(reservation_id):
+    data = request.get_json()
+
+    user = User.query.get(data["user_id"])
+    if not user:
+        return jsonify({"message": "Unauthorized."}), 401
+
     reservation = Reservation.query.get(reservation_id)
     if not reservation:
         return jsonify({"message": "Reservation not found"}), 404
 
+    if reservation.user_id != user.id:
+        return jsonify({"message": "You don't own this reservation."}), 403
+
     time_now = datetime.now()
     if (reservation.start_time - time_now).total_seconds() < 60 * 60 * 2:
         return jsonify({"message": "Cannot modify reservation less than 2 hours before start time"}), 403
-
-    data = request.get_json()
 
     try:
         new_court_number = reservation.court_number

@@ -2,3 +2,4 @@
 /Backend/venv/
 /Backend/app/__pycache__/
 /Backend/instance/
+/Backend/app/utils/__pycache__/
