@@ -61,6 +61,15 @@ def create_reservation(current_user):
 
         if conflicting_reservations:
             return jsonify({"message": "Time slot conflicts with an existing reservation."}), 409
+        
+        existing_reservations = Reservation.query.filter(
+            Reservation.user_id == current_user.id,
+            Reservation.start_time < end_time,
+            Reservation.end_time > start_time
+        ).all()
+
+        if existing_reservations:
+            return jsonify({"message": "You already have a conflicting reservation."}), 409
 
         new_reservation = Reservation(
             user_id=current_user.id,
@@ -83,81 +92,65 @@ def create_reservation(current_user):
         return jsonify({"error": str(e)}), 400
 
 @reservations_bp.route("/delete/<int:reservation_id>", methods=["DELETE"])
-def delete_reservation(reservation_id):
-    data = request.get_json()
-
-    user = User.query.get(data["user_id"])
-    if not user:
-        return jsonify({"message": "Unauthorized."}), 401
-    
+@token_required
+def delete_reservation(current_user, reservation_id):
     reservation = Reservation.query.get(reservation_id)
     if not reservation:
         return jsonify({"message": "Reservation not found"}), 404
 
-    if reservation.user_id != user.id:
-        return jsonify({"message": "You don't own this reservation."}), 403
+    if reservation.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({"message": "Unauthorized"}), 403
 
     time_now = datetime.now()
-    if (((reservation.start_time - time_now).total_seconds() < 60*60*2) and (reservation.end_time - time_now).total_seconds() > 0):
+    if ((reservation.start_time - time_now).total_seconds() < 60*60*2 and
+        (reservation.end_time - time_now).total_seconds() > 0 and
+        not current_user.is_admin):
         return jsonify({"message": "Cannot delete reservation less than 2 hours before start time"}), 403
-    
+
     db.session.delete(reservation)
     db.session.commit()
     return jsonify({"message": "Reservation deleted"}), 200
 
 @reservations_bp.route("/update/<int:reservation_id>", methods=["PATCH"])
-def update_reservation(reservation_id):
+@token_required
+def update_reservation(current_user, reservation_id):
     data = request.get_json()
-
-    user = User.query.get(data["user_id"])
-    if not user:
-        return jsonify({"message": "Unauthorized."}), 401
-
     reservation = Reservation.query.get(reservation_id)
     if not reservation:
         return jsonify({"message": "Reservation not found"}), 404
 
-    if reservation.user_id != user.id:
-        return jsonify({"message": "You don't own this reservation."}), 403
+    if reservation.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({"message": "You don't have permission to update this reservation."}), 403
 
     time_now = datetime.now()
-    if (reservation.start_time - time_now).total_seconds() < 60 * 60 * 2:
+    if reservation.start_time < time_now:
+        return jsonify({"message": "Cannot modify a past reservation."}), 403
+
+    if (reservation.start_time - time_now).total_seconds() < 60*60*2 and not current_user.is_admin:
         return jsonify({"message": "Cannot modify reservation less than 2 hours before start time"}), 403
 
-    try:
-        new_court_number = reservation.court_number
-        new_start_time = reservation.start_time
-        new_end_time = reservation.end_time
+    new_court_number = data.get("court_number", reservation.court_number)
+    new_start_time = datetime.fromisoformat(data.get("start_time")) if "start_time" in data else reservation.start_time
+    new_end_time = datetime.fromisoformat(data.get("end_time")) if "end_time" in data else reservation.end_time
 
-        if "court_number" in data:
-            new_court_number = data["court_number"]
-        if "start_time" in data:
-            new_start_time = datetime.fromisoformat(data["start_time"])
-        if "end_time" in data:
-            new_end_time = datetime.fromisoformat(data["end_time"])
+    conflicting_reservations = Reservation.query.filter( #this is to avoid conflicting times on the same court
+        Reservation.id != reservation.id,
+        Reservation.court_number == new_court_number,
+        Reservation.start_time < new_end_time,
+        Reservation.end_time > new_start_time
+    ).all()
 
-        conflicting_reservations = Reservation.query.filter(
-            Reservation.id != reservation.id,
-            Reservation.court_number == new_court_number,
-            Reservation.start_time < new_end_time,
-            Reservation.end_time > new_start_time
-        ).all()
+    if conflicting_reservations:
+        return jsonify({"message": "Time slot conflicts with an existing reservation."}), 409
 
-        if conflicting_reservations:
-            return jsonify({"message": "Time slot conflicts with an existing reservation."}), 409
+    reservation.court_number = new_court_number
+    reservation.start_time = new_start_time
+    reservation.end_time = new_end_time
+    db.session.commit()
 
-        reservation.court_number = new_court_number
-        reservation.start_time = new_start_time
-        reservation.end_time = new_end_time
-
-        db.session.commit()
-
-        return jsonify({
-            "id": reservation.id,
-            "court_number": reservation.court_number,
-            "start_time": reservation.start_time.isoformat(),
-            "end_time": reservation.end_time.isoformat()
-        }), 200
-
-    except Exception as error:
-        return jsonify({"error": str(error)}), 400
+    return jsonify({
+        "id": reservation.id,
+        "court_number": reservation.court_number,
+        "start_time": reservation.start_time.isoformat(),
+        "end_time": reservation.end_time.isoformat()
+    }), 200
