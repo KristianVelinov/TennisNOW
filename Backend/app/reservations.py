@@ -6,19 +6,19 @@ from app.utils.auth_decorators import token_required
 
 reservations_bp = Blueprint('reservations', __name__, url_prefix='/reservations')
 
-@reservations_bp.route("/booked", methods=["GET"])
+@app.route('/reservations', methods=['GET'])
 def get_reservations():
-    reservations = Reservation.query.all()
-    result = []
-    for reservation in reservations:
-        result.append({
-            "id": reservation.id,
-            "court_number": reservation.court_number,
-            "start_time": reservation.start_time.isoformat(),
-            "end_time": reservation.end_time.isoformat(),
-            "user_id": reservation.user_id
-        })
-    return jsonify(result), 200
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({'error': 'Authorization token required'}), 401
+    user_id = get_user_id_from_token(token)
+    if not user_id:
+        return jsonify({'error': 'Invalid token'}), 403
+
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM reservation")
+    reservations = cursor.fetchall()
+    return jsonify(reservations)
 
 @reservations_bp.route("/court/<int:court_number>/<string:date>", methods=["GET"])
 def get_specific_reservation(court_number, date): # will be used by frontend to filter reservation booking (once i make the frontend(which might never even materialize))
