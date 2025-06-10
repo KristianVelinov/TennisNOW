@@ -11,6 +11,13 @@ function Reservations() {
   const courts = [1, 2, 3, 4, 5, 6];
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
   const location = useLocation();
+  const [editingReservationId, setEditingReservationId] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    court_number: "",
+    start_time: "",
+    end_time: ""
+  });
+
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60 * 1000); // update every 60 seconds
@@ -109,6 +116,39 @@ function Reservations() {
     }
   };
 
+  const handleUpdateReservation = async (reservationId) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("You must be logged in to update a reservation.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/reservations/update/${reservationId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editFormData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage("Reservation updated successfully.");
+        fetchUserReservations();
+        setEditingReservationId(null);
+      } else {
+        setMessage(data.message || "Failed to update reservation.");
+      }
+    } catch (error) {
+      console.error("Error updating reservation:", error);
+      setMessage("Failed to update reservation.");
+    }
+  };
+
+
   const isSlotReserved = (court, hour) => {
     return reservations.some((r) => {
       if (r.court_number !== court) return false;
@@ -181,12 +221,67 @@ function Reservations() {
                   <span>
                     Court {reservation.court_number} | {new Date(reservation.start_time).toLocaleString()} - {new Date(reservation.end_time).toLocaleString()}
                   </span>
-                  <button
-                    onClick={() => handleDeleteReservation(reservation.id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleDeleteReservation(reservation.id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditingReservationId(reservation.id);
+                        setEditFormData({
+                          court_number: reservation.court_number,
+                          start_time: reservation.start_time.slice(0, 16),
+                          end_time: reservation.end_time.slice(0, 16)
+                        });
+                      }}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                    >
+                      Update
+                    </button>
+                    {editingReservationId === reservation.id && (
+                      <div className="mt-3 space-y-2">
+                        <input
+                          type="number"
+                          min="1"
+                          max="6"
+                          value={editFormData.court_number}
+                          onChange={(e) => setEditFormData({ ...editFormData, court_number: e.target.value })}
+                          className="border p-1 rounded"
+                          placeholder="Court Number"
+                        />
+                        <input
+                          type="datetime-local"
+                          value={editFormData.start_time}
+                          onChange={(e) => setEditFormData({ ...editFormData, start_time: e.target.value })}
+                          className="border p-1 rounded"
+                        />
+                        <input
+                          type="datetime-local"
+                          value={editFormData.end_time}
+                          onChange={(e) => setEditFormData({ ...editFormData, end_time: e.target.value })}
+                          className="border p-1 rounded"
+                        />
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleUpdateReservation(reservation.id)}
+                            className="bg-green-600 text-white px-2 py-1 rounded"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingReservationId(null)}
+                            className="bg-gray-500 text-white px-2 py-1 rounded"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </li>
               ))}
           </ul>
