@@ -23,6 +23,7 @@ class Reservation(db.Model):
 class CourtRating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     court_number = db.Column(db.Integer, nullable=False)
+    reservation_id = db.Column(db.Integer, db.ForeignKey("reservation.id"))
     rating = db.Column(db.Float, nullable=False)
     review = db.Column(db.String(500))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

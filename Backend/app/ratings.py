@@ -21,6 +21,10 @@ def rate_reservation(current_user, reservation_id):
     if reservation.end_time > datetime.now():
         return jsonify({"message": "Cannot rate before reservation ends."}), 403
 
+    existing_rating = CourtRating.query.filter_by(user_id=current_user.id, reservation_id=reservation.id).first()
+    if existing_rating:
+        return jsonify({"message": "You have already rated this reservation."}), 409
+
     if not (1 <= data.get("rating", 0) <= 5):
         return jsonify({"message": "Rating must be between 1 and 5."}), 400
 
@@ -56,3 +60,9 @@ def get_court_ratings(court_number):
         "average_rating": round(avg_rating, 2),
         "ratings": result
     }), 200
+
+@ratings_bp.route("/rate/<int:reservation_id>/exists", methods=["GET"])
+@token_required
+def has_rated(current_user, reservation_id):
+    existing_rating = CourtRating.query.filter_by(user_id=current_user.id, reservation_id=reservation_id).first()
+    return jsonify({"has_rated": bool(existing_rating)}), 200

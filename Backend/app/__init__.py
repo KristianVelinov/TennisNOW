@@ -12,15 +12,16 @@ def create_app():
     CORS(app)
 
     load_dotenv()
-
     database_url = os.getenv("DATABASE_URL")
-    
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
     migrate = Migrate(app, db)
+
+    with app.app_context():
+        from . import models  
+        db.create_all()   
 
     from .reservations import reservations_bp
     from .account_management import users_bp
@@ -31,8 +32,5 @@ def create_app():
     app.register_blueprint(users_bp)
     app.register_blueprint(profile_bp, url_prefix="/profile")
     app.register_blueprint(ratings_bp, url_prefix="/ratings")
-
-    with app.app_context():
-        from . import models
 
     return app

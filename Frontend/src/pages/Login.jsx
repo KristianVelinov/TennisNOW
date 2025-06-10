@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { login } from "../services/api";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 
-const Login = () => {
+const Login = ({onLogin}) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +14,8 @@ const Login = () => {
       const response = await login(username, password);
       if (response.token) {
         localStorage.setItem("token", response.token);
-        navigate("/dashboard");
+        onLogin(true);
+        navigate("/");
       } else {
         setError(response.error || "Login failed. Check your credentials.");
       }
@@ -54,9 +55,9 @@ const Login = () => {
       </form>
       <p className="text-sm text-center mt-4">
         Don't have an account?{" "}
-        <a href="/signup" className="text-blue-600 hover:underline">
+        <Link to="/signup" className="text-blue-600 hover:underline">
           Sign up
-        </a>
+        </Link>
       </p>
     </div>
   );

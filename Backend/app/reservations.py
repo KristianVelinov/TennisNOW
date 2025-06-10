@@ -28,6 +28,7 @@ def get_reservations(current_user):
 
 @reservations_bp.route("/court/<int:court_number>/<string:date>", methods=["GET"])
 def get_specific_reservation(court_number, date): # will be used by frontend to filter reservation booking (once i make the frontend(which might never even materialize))
+                                                  # WOOOOOOW!!! I actually made the frontend! Former me would be proud of future me using this!
     try:
         day_start = datetime.fromisoformat(date + "T00:00:00")
         day_end = datetime.fromisoformat(date + "T23:59:59")
