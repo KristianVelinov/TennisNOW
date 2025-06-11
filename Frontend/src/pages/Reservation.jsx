@@ -177,7 +177,7 @@ function Reservations() {
         />
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-visible">
         <table className="table-auto border-collapse w-full mb-8">
           <thead>
             <tr>
@@ -217,7 +217,7 @@ function Reservations() {
             {activeReservations
               .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
               .map((reservation) => (
-                <li key={reservation.id} className="flex items-center justify-between bg-green-100 p-3 rounded">
+                <li key={reservation.id} className="flex items-center justify-between bg-red-100 p-3 rounded">
                   <span>
                     Court {reservation.court_number} | {new Date(reservation.start_time).toLocaleString()} - {new Date(reservation.end_time).toLocaleString()}
                   </span>
@@ -268,7 +268,7 @@ function Reservations() {
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleUpdateReservation(reservation.id)}
-                            className="bg-green-600 text-white px-2 py-1 rounded"
+                            className="bg-red-600 text-white px-2 py-1 rounded"
                           >
                             Save
                           </button>

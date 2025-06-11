@@ -73,9 +73,9 @@ export default function BookCourt() {
 
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[85vh] bg-gradient-to-br from-green-50 to-green-100 p-6">
+        <div className="flex flex-col items-center justify-center min-h-[85vh] bg-gradient-to-br from-red-50 to-red-100 p-6">
             <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-5xl text-center">
-                <h2 className="text-3xl font-bold text-green-700 mb-4 flex items-center justify-center gap-2">
+                <h2 className="text-3xl font-bold text-red-700 mb-4 flex items-center justify-center gap-2">
                     <CalendarPlus size={28} /> Book a Court
                 </h2>
                 <p className="text-gray-600 mb-6 text-lg">Select your preferred slot and court to secure your game.</p>
@@ -94,16 +94,16 @@ export default function BookCourt() {
                     <table className="table-auto w-full border-collapse">
                         <thead>
                             <tr>
-                                <th className="border p-2 bg-green-200">Time</th>
+                                <th className="border p-2 bg-red-200">Time</th>
                                 {courtNumbers.map((court) => (
-                                    <th key={court} className="border p-2 bg-green-200">Court {court}</th>
+                                    <th key={court} className="border p-2 bg-red-200">Court {court}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {timeslots.map((time) => (
                                 <tr key={time}>
-                                    <td className="border p-2 font-medium bg-green-50">{time}</td>
+                                    <td className="border p-2 font-medium bg-red-50">{time}</td>
                                     {courtNumbers.map((court) => {
                                         const slotKey = `${court}|${time}`;
                                         const isBooked = bookedSlots.has(slotKey);
@@ -112,7 +112,7 @@ export default function BookCourt() {
                                                 {!isBooked ? (
                                                     <button
                                                         onClick={() => handleBooking(court, time)}
-                                                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
+                                                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition text-sm"
                                                     >
                                                         Book
                                                     </button>
@@ -128,7 +128,7 @@ export default function BookCourt() {
                     </table>
                 </div>
 
-                {message && <p className="mt-6 text-green-700 font-semibold">{message}</p>}
+                {message && <p className="mt-6 text-red-700 font-semibold">{message}</p>}
             </div>
         </div>
     );

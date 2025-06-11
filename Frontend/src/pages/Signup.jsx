@@ -70,7 +70,7 @@ const Signup = () => {
 
         <button
           type="submit"
-          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
+          className="w-full bg-red-600 text-white p-2 rounded hover:bg-red-700"
         >
           Sign Up
         </button>
