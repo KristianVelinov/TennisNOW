@@ -15,7 +15,7 @@ export default function Header({ isLoggedIn, onLogout }) {
       <h1 className="text-2xl font-bold tracking-wide">TennisNOW</h1>
       <nav className="space-x-6 text-lg">
         {!isLoggedIn ? (
-          <Link to="/login" className="hover:text-blue-300 transition">
+          <Link to="/login" className="hover:bg-red-50 inline-block bg-white text-red-800 p-1.5 rounded-md transform transition-transform duration-200 hover:scale-110">
             Login
           </Link>
         ) : (
