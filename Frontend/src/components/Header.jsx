@@ -26,7 +26,7 @@ export default function Header({ isLoggedIn, onLogout }) {
             Logout
           </button>
         )}
-        <Link to="/" className="hover:text-blue-300 transition">Main</Link>
+        <Link to="/" className="hover:bg-red-50 bg-white text-red-800 p-1.5 rounded-md transition">Main</Link>
         <Link to="/reservations" className="hover:text-blue-300 transition">My Reservations</Link>
         <Link to="/book" className="hover:text-blue-300 transition">Book a Court</Link>
         <Link to="/stats" className="hover:text-blue-300 transition">Profile Stats</Link>
