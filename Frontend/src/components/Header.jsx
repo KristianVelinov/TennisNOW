@@ -19,13 +19,12 @@ export default function Header({ isLoggedIn, onLogout }) {
             Login
           </Link>
         ) : (
-          <button
+          <Link
             onClick={handleLogout}
-            className="hover:text-blue-300 transition"
-            style={{ background: "none", border: "none", cursor: "pointer", color: "inherit" }}
+            className="hover:bg-red-50 inline-block bg-white text-red-800 p-1.5 rounded-md transform transition-transform duration-200 hover:scale-110"
           >
             Logout
-          </button>
+          </Link>
         )}
         <Link to="/" className="hover:bg-red-50 inline-block bg-white text-red-800 p-1.5 rounded-md transform transition-transform duration-200 hover:scale-110">Main</Link>
         <Link to="/reservations" className="hover:bg-red-50 inline-block bg-white text-red-800 p-1.5 rounded-md transform transition-transform duration-200 hover:scale-110">My Reservations</Link>
